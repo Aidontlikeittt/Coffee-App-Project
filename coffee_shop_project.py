@@ -4,6 +4,12 @@ import altair as alt
 from datetime import datetime
 import uuid
 
+def about_page():
+    st.title("Team Kawfee")
+    st.write("""
+        Team members : Muhammad Afiq Bin Josi Rizal - 22004193
+    """)
+
 def generate_sales_report(orders):
     if len(orders) > 0:
         total_sales, best_seller, worst_seller = calculate_sales_report(orders)
@@ -75,7 +81,7 @@ def calculate_profit(orders):
 if 'order_history' not in st.session_state:
     st.session_state.order_history = {}
 
-# Initialize storage for user data (temporary storage for example purposes)
+# Initialize storage for user data (temporary)
 if 'users' not in st.session_state:
     st.session_state.users = {
         "admin": {"password": "adminpass", "role": "admin"},
@@ -170,137 +176,126 @@ def register_page():
             st.warning("Please fill out both fields.")
     st.button("Back to Login", on_click=lambda: set_page("login"))
 
-def about_page():
-    st.title("About This App")
-    st.write("This app is developed as part of a university project for managing coffee shop operations.")
-    st.write("### Team Members:")
-    st.write("- Muhammad Afiq bin Josi Rizal - 22004193")
-
-# Main Application Page with Sidebar Navigation
+# Main Application Page
 def app_page():
     user_role = st.session_state["user"]["role"]
     username = st.session_state["user"]["username"]
 
-    # Sidebar with navigation options
     st.sidebar.header(f"Welcome, {username} ({user_role})")
-    sidebar_option = st.sidebar.radio("Navigate", ["Home", "About Page"])
-
-    # Navigate based on sidebar selection
-    if sidebar_option == "About Page":
-        about_page()
-    else:
-        if user_role == "customer":
-            # Existing customer functionalities
-            st.title("Place an Order")
-            st.sidebar.header("Menu")
-            for coffee, price in menu.items():
-                st.sidebar.write(f"{coffee}: RM{price:.2f}")
-            
-            coffee_type = st.selectbox("Select Coffee Type", list(menu.keys()))
-            size = st.selectbox("Select Size", ["Small", "Medium", "Large"])
-            add_ons = st.multiselect("Add-ons", ["Extra Sugar", "Milk"])
-            quantity = st.number_input("Quantity", min_value=1, max_value=10, value=1)
-
-            promo_code = st.text_input("Enter Promo Code (Optional)")
-
-            # Initialize the order object before applying promo code
-            order_id = generate_order_id()
-            price = menu[coffee_type] * quantity
-            order = {
-                "order_id": order_id,
-                "coffee_type": coffee_type,
-                "size": size,
-                "add_ons": add_ons,
-                "quantity": quantity,
-                "price": price,
-                "order_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "Preparing"
-            }
-
-            if promo_code:
-                apply_promo_code(order, promo_code)  # Apply the promo code here
-
-            if st.button("Place Order"):
-                st.session_state.orders.append(order)
-                if username not in st.session_state.order_history:
-                    st.session_state.order_history[username] = []
-                st.session_state.order_history[username].append(order)
-
-                st.success(f"Order placed successfully! Your order ID is {order_id}.")
-                st.write(f"Estimated Preparation Time: {5 + quantity * 2} minutes")
-                update_inventory("coffee_beans", quantity * 10)
-                update_inventory("cups", quantity)
-                if "Milk" in add_ons:
-                    update_inventory("milk", quantity * 200)  # Update milk for orders with milk
-                if "Extra Sugar" in add_ons:
-                    update_inventory("sugar", quantity * 10)  # Update sugar for orders with extra sugar
-
-            # Notification Section for Pickup
-            st.header("Pickup Notifications")
-            notifications = [
-                order for order in st.session_state.order_history.get(username, [])
-                if order["status"] == "Ready"
-            ]
-            if notifications:
-                st.success("The following orders are ready for pickup:")
-                for order in notifications:
-                    st.write(f"Order ID: {order['order_id']} - {order['coffee_type']} ({order['size']})")
-            else:
-                st.info("No orders are ready for pickup yet.")
-
-            # Order History
-            st.header("Order History")
-            if username in st.session_state.order_history and st.session_state.order_history[username]:
-                order_df = pd.DataFrame(st.session_state.order_history[username])
-                st.dataframe(order_df[["order_id", "coffee_type", "size", "quantity", "price", "status", "order_time"]])
-            else:
-                st.write("No orders placed yet.")
-
-        elif user_role == "admin":
-            # Existing admin functionalities
-            st.title("Admin Dashboard")
-            st.header("Order Management")
-
-            # Admin: Mark Orders as Ready
-            if user_role == "admin":  # Only admins can mark orders as ready
-                if len(st.session_state.orders) > 0:
-                    for order in st.session_state.orders:
-                        if order["status"] == "Preparing":
-                            st.write(f"Order ID: {order['order_id']} - {order['coffee_type']} ({order['size']})")
-                            if st.button(f"Mark as Ready - {order['order_id']}"):
-                                order["status"] = "Ready"
-                                st.success(f"Order {order['order_id']} marked as ready!")
-                else:
-                    st.info("No active orders to manage.")
-            
-            # Admin: Sales Report
-            if user_role == "admin":  # Only admins can view the sales report
-                if len(st.session_state.orders) > 0:
-                    total_sales, best_seller, worst_seller = calculate_sales_report(st.session_state.orders)
-                    st.write(f"Total Sales: RM{total_sales:.2f}")
-                    st.write(f"Best-Selling Coffee: {best_seller}")
-                    st.write(f"Least-Selling Coffee: {worst_seller}")
-                    sales_df = pd.DataFrame(st.session_state.orders)
-                    chart = alt.Chart(sales_df).mark_bar().encode(
-                        x='coffee_type',
-                        y='price',
-                        color='coffee_type'
-                    )
-                    st.altair_chart(chart, use_container_width=True)
-                else:
-                    st.write("No sales data available.")
-
-            # Admin: Inventory Management
-            st.header("Inventory Management")
-            if st.checkbox("Show Inventory"):
-                st.write("Current Inventory Levels:")
-                st.write(st.session_state.inventory)
-
-            if st.button("Restock Inventory"):
-                for item in st.session_state.inventory:
-                    st.session_state.inventory[item] += 100
-                st.success("Inventory has been restocked.")
+    if st.sidebar.button("About Us"):
+        st.session_state.current_page = "about"
+    if user_role == "customer":
+        st.title("Place an Order")
+        st.sidebar.header("Menu")
+        for coffee, price in menu.items():
+            st.sidebar.write(f"{coffee}: RM{price:.2f}")
         
+        coffee_type = st.selectbox("Select Coffee Type", list(menu.keys()))
+        size = st.selectbox("Select Size", ["Small", "Medium", "Large"])
+        add_ons = st.multiselect("Add-ons", ["Extra Sugar", "Milk"])
+        quantity = st.number_input("Quantity", min_value=1, max_value=10, value=1)
+
+        promo_code = st.text_input("Enter Promo Code (Optional)")
+
+        # Initialize the order object before applying promo code
+        order_id = generate_order_id()
+        price = menu[coffee_type] * quantity
+        order = {
+            "order_id": order_id,
+            "coffee_type": coffee_type,
+            "size": size,
+            "add_ons": add_ons,
+            "quantity": quantity,
+            "price": price,
+            "order_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "Preparing"
+        }
+
+        if promo_code:
+            apply_promo_code(order, promo_code)  # Apply the promo code here
+
+        if st.button("Place Order"):
+            st.session_state.orders.append(order)
+            if username not in st.session_state.order_history:
+                st.session_state.order_history[username] = []
+            st.session_state.order_history[username].append(order)
+
+            st.success(f"Order placed successfully! Your order ID is {order_id}.")
+            st.write(f"Estimated Preparation Time: {5 + quantity * 2} minutes")
+            update_inventory("coffee_beans", quantity * 10)
+            update_inventory("cups", quantity)
+            if "Milk" in add_ons:
+                update_inventory("milk", quantity * 200)  # Update milk for orders with milk
+            if "Extra Sugar" in add_ons:
+                update_inventory("sugar", quantity * 10)  # Update sugar for orders with extra sugar
+
+        # Notification Section for Pickup
+        st.header("Pickup Notifications")
+        notifications = [
+            order for order in st.session_state.order_history.get(username, [])
+            if order["status"] == "Ready"
+        ]
+        if notifications:
+            st.success("The following orders are ready for pickup:")
+            for order in notifications:
+                st.write(f"Order ID: {order['order_id']} - {order['coffee_type']} ({order['size']})")
+        else:
+            st.info("No orders are ready for pickup yet.")
+
+        # Order History
+        st.header("Order History")
+        if username in st.session_state.order_history and st.session_state.order_history[username]:
+            order_df = pd.DataFrame(st.session_state.order_history[username])
+            st.dataframe(order_df[["order_id", "coffee_type", "size", "quantity", "price", "status", "order_time"]])
+        else:
+            st.write("No orders placed yet.")
+
+    elif user_role == "admin":
+        # Admin Dashboard
+        st.title("Admin Dashboard")
+        st.header("Order Management")
+        
+
+        # Admin: Mark Orders as Ready
+        if user_role == "admin":  # Only admins can mark orders as ready
+            if len(st.session_state.orders) > 0:
+                for order in st.session_state.orders:
+                    if order["status"] == "Preparing":
+                        st.write(f"Order ID: {order['order_id']} - {order['coffee_type']} ({order['size']})")
+                        if st.button(f"Mark as Ready - {order['order_id']}"):
+                            order["status"] = "Ready"
+                            st.success(f"Order {order['order_id']} marked as ready!")
+            else:
+                st.info("No active orders to manage.")
+        
+        # Admin: Sales Report
+        if user_role == "admin":  # Only admins can view the sales report
+            if len(st.session_state.orders) > 0:
+                total_sales, best_seller, worst_seller = calculate_sales_report(st.session_state.orders)
+                st.write(f"Total Sales: RM{total_sales:.2f}")
+                st.write(f"Best-Selling Coffee: {best_seller}")
+                st.write(f"Least-Selling Coffee: {worst_seller}")
+                sales_df = pd.DataFrame(st.session_state.orders)
+                chart = alt.Chart(sales_df).mark_bar().encode(
+                    x='coffee_type',
+                    y='price',
+                    color='coffee_type'
+                )
+                st.altair_chart(chart, use_container_width=True)
+            else:
+                st.write("No sales data available.")
+
+        # Admin: Inventory Management
+        st.header("Inventory Management")
+        if st.checkbox("Show Inventory"):
+            st.write("Current Inventory Levels:")
+            st.write(st.session_state.inventory)
+
+        if st.button("Restock Inventory"):
+            for item in st.session_state.inventory:
+                st.session_state.inventory[item] += 100
+            st.success("Inventory has been restocked.")
+
     if st.sidebar.button("Logout"):
         logout()
 
@@ -321,3 +316,9 @@ if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
         login_page()
     elif st.session_state.current_page == "register":
         register_page()
+else:
+    if st.session_state.current_page == "about":
+        about_page()
+    else:
+        app_page()
+    

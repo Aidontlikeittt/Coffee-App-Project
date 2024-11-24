@@ -4,6 +4,14 @@ import altair as alt
 from datetime import datetime
 import uuid
 
+def about_page():
+    st.title("About This App")
+    st.write("This coffee shop app was developed as part of a university project.")
+    st.write("It features user authentication, order management, sales reporting, and inventory tracking.")
+    st.write("### Team Members:")
+    st.write("- Muhammad Afiq bin Josi Rizal - 22004193")
+
+
 def generate_sales_report(orders):
     if len(orders) > 0:
         total_sales, best_seller, worst_seller = calculate_sales_report(orders)
@@ -176,6 +184,9 @@ def app_page():
     username = st.session_state["user"]["username"]
 
     st.sidebar.header(f"Welcome, {username} ({user_role})")
+    if sidebar_selection == "About Page":
+        about_page()
+    else :
 
     if user_role == "customer":
         st.title("Place an Order")

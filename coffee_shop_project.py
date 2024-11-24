@@ -4,9 +4,6 @@ import altair as alt
 from datetime import datetime
 import uuid
 
-st.sidebar("About Page")
-st.title("Team Kawfee")
-st.write("Team members: 1. Muhammad Afiq Bin Josi Rizal - 22004193")
 def generate_sales_report(orders):
     if len(orders) > 0:
         total_sales, best_seller, worst_seller = calculate_sales_report(orders)

@@ -170,24 +170,23 @@ def register_page():
             st.warning("Please fill out both fields.")
     st.button("Back to Login", on_click=lambda: set_page("login"))
 
-# Sidebar for About Page
 def about_page():
     st.title("About This App")
-    st.write("This coffee shop app was developed as part of a university project.")
-    st.write("It features user authentication, order management, sales reporting, and inventory tracking.")
+    st.write("This app is developed as part of a university project for managing coffee shop operations.")
     st.write("### Team Members:")
     st.write("- Muhammad Afiq bin Josi Rizal - 22004193")
 
-# Update the main application page to include sidebar navigation
+# Main Application Page with Sidebar Navigation
 def app_page():
     user_role = st.session_state["user"]["role"]
     username = st.session_state["user"]["username"]
 
-    # Add navigation options to the sidebar
+    # Sidebar with navigation options
     st.sidebar.header(f"Welcome, {username} ({user_role})")
-    sidebar_selection = st.sidebar.radio("Navigation", ["Home", "About Page"])
+    sidebar_option = st.sidebar.radio("Navigate", ["Home", "About Page"])
 
-    if sidebar_selection == "About Page":
+    # Navigate based on sidebar selection
+    if sidebar_option == "About Page":
         about_page()
     else:
         if user_role == "customer":
